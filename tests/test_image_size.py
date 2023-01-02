@@ -1,11 +1,11 @@
 import os
 import sys
-from subprocess import check_output, CalledProcessError
+from subprocess import CalledProcessError, check_output
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from kstools.jpeg import JpegParser
-from kstools.isobmff import ImageParser
+from kstools.isobmff import ImageParser  # noqa: E402
+from kstools.jpeg import JpegParser  # noqa: E402
 
 
 def perc(v: int, t: int) -> str:
@@ -69,7 +69,8 @@ def test():
     print(f"file_count={file_count} byte_count={byte_count}")
     avg = f" (avg={seek_count/file_count:.02f}/file)" if file_count else ""
     print(
-        f"bytes_read={bytes_read} ({perc(bytes_read, byte_count)}) seek_count={seek_count}{avg}"
+        f"bytes_read={bytes_read} ({perc(bytes_read, byte_count)})"
+        f" seek_count={seek_count}{avg}"
     )
     print(f"failures={failures} ({perc(failures, file_count)}) errors={errors}")
 

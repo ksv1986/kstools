@@ -1,5 +1,6 @@
-from .types import ImageSize, ImageSizeResult, PreadStream, b2x
 from typing import IO
+
+from .types import ImageSize, ImageSizeResult, PreadStream, b2x
 
 
 def be16(data: bytes):
@@ -20,7 +21,7 @@ class JpegParser:
 
             seg = self.stream.read(2)
             if len(seg) < 2:
-                return (None, f"EOF")
+                return (None, "EOF")
 
             if seg[0] != 0xFF:
                 return (None, f"Wrong segment header {b2x(seg)} at {offs}")
@@ -29,18 +30,18 @@ class JpegParser:
                 continue
 
             if seg[1] == 0xD9:
-                return ((None, f"EOI"), None, None)
+                return ((None, "EOI"), None, None)
 
             seg_len = self.stream.read(2)
             if len(seg_len) < 2:
-                return (None, f"EOF")
+                return (None, "EOF")
 
             skip = be16(seg_len) - 2
             # print(f"seg: offs={offs:x}/{offs} {b2x(seg)}{b2x(seg_len)} len={skip}")
             if seg[1] == 0xC0 or seg[1] == 0xC2:  # SOFn
                 data = self.stream.read(5)
                 if len(data) < 5:
-                    return (None, f"EOF")
+                    return (None, "EOF")
 
                 h = be16(data[1:3])
                 w = be16(data[3:5])

@@ -1,8 +1,8 @@
-from struct import Struct
-from .types import ImageSize, ImageSizeResult, PreadStream
 from dataclasses import dataclass
+from struct import Struct
 from typing import IO
 
+from .types import ImageSize, ImageSizeResult, PreadStream
 
 BOX = Struct(">I4s")
 ISPE = Struct(">IIII")
