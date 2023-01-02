@@ -12,7 +12,7 @@ class JpegParser:
 
     def image_size(self) -> ImageSizeResult:
         soi = self.stream.read(2)
-        if soi[0] != 0xff or soi[1] != 0xd8:
+        if soi[0] != 0xFF or soi[1] != 0xD8:
             return (None, f"Wrong SOI {b2x(soi)}")
 
         while True:
@@ -22,13 +22,13 @@ class JpegParser:
             if len(seg) < 2:
                 return (None, f"EOF")
 
-            if seg[0] != 0xff:
+            if seg[0] != 0xFF:
                 return (None, f"Wrong segment header {b2x(seg)} at {offs}")
 
-            if seg[1] >= 0xd0 and seg[1] < 0xd8: # RSTn; skip
+            if seg[1] >= 0xD0 and seg[1] < 0xD8:  # RSTn; skip
                 continue
 
-            if seg[1] == 0xd9:
+            if seg[1] == 0xD9:
                 return ((None, f"EOI"), None, None)
 
             seg_len = self.stream.read(2)
@@ -37,7 +37,7 @@ class JpegParser:
 
             skip = be16(seg_len) - 2
             # print(f"seg: offs={offs:x}/{offs} {b2x(seg)}{b2x(seg_len)} len={skip}")
-            if seg[1] == 0xc0 or seg[1] == 0xc2: # SOFn
+            if seg[1] == 0xC0 or seg[1] == 0xC2:  # SOFn
                 data = self.stream.read(5)
                 if len(data) < 5:
                     return (None, f"EOF")

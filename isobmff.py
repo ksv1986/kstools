@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from typing import IO
 
 
-BOX=Struct(">I4s")
-ISPE=Struct(">IIII")
+BOX = Struct(">I4s")
+ISPE = Struct(">IIII")
 
 
 @dataclass
@@ -48,18 +48,18 @@ class ImageParser:
 
     def image_size(self) -> ImageSizeResult:
         b = self.read_box(0)
-        if b.text != b'ftyp':
+        if b.text != b"ftyp":
             return (None, "No ftyp box")
 
-        m = self.find_box(b'meta', b.end, self.end)
+        m = self.find_box(b"meta", b.end, self.end)
         if not m:
             return (None, "meta not found")
 
-        b = self.find_box(b'iprp', m.start + 4, m.end)
+        b = self.find_box(b"iprp", m.start + 4, m.end)
         if not b:
             return (None, "iprp not found")
 
-        b = self.find_box(b'ipco', b.start, b.end)
+        b = self.find_box(b"ipco", b.start, b.end)
         if not b:
             return (None, "ipco not found")
 
@@ -71,13 +71,13 @@ class ImageParser:
         while True:
             b = self.read_box(offs)
 
-            if b.text == b'ispe':
+            if b.text == b"ispe":
                 data = self.stream.pread(b.start, ISPE.size)
                 _, width, height, _ = ISPE.unpack(data)
                 if not sz or sz.width < width:
                     sz, error = ImageSize(width, height), None
 
-            if b.text == b'irot':
+            if b.text == b"irot":
                 data = self.stream.pread(b.start, 1)
                 rotate = data[0] & 1 == 1
 

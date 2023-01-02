@@ -4,7 +4,7 @@ from typing import IO
 
 
 def b2x(data: bytes):
-    return hexlify(data[0:11]).decode('ascii')
+    return hexlify(data[0:11]).decode("ascii")
 
 
 @dataclass
