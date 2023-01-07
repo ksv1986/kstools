@@ -31,6 +31,8 @@ class ImageParser:
 
     def read_box(self, offs: int) -> Box:
         data = self.stream.pread(offs, BOX.size)
+        if len(data) < BOX.size:
+            return None
         b = Box(offs, *BOX.unpack(data))
         if not b.size:
             b.size = self.end - b.offs
@@ -39,6 +41,8 @@ class ImageParser:
     def find_box(self, text: bytes, offs: int, end: int) -> Box:
         b = self.read_box(offs)
         while True:
+            if not b:
+                return None
             if b.text == text:
                 return b
             if b.end >= end:
@@ -48,6 +52,9 @@ class ImageParser:
 
     def image_size(self) -> ImageSizeResult:
         b = self.read_box(0)
+        if not b:
+            return (None, "Empty file")
+
         if b.text != b"ftyp":
             return (None, "No ftyp box")
 

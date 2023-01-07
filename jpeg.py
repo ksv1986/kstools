@@ -13,6 +13,9 @@ class JpegParser:
 
     def image_size(self) -> ImageSizeResult:
         soi = self.stream.read(2)
+        if len(soi) < 2:
+            return (None, "EOF")
+
         if soi[0] != 0xFF or soi[1] != 0xD8:
             return (None, f"Wrong SOI {b2x(soi)}")
 
