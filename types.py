@@ -7,6 +7,14 @@ def b2x(data: bytes):
     return hexlify(data[0:11]).decode("ascii")
 
 
+def be16(data: bytes):
+    return int.from_bytes(data[:2], "big")
+
+
+def le16(data: bytes):
+    return int.from_bytes(data[:2], "little")
+
+
 @dataclass
 class ImageSize:
     width: int

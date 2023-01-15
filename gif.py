@@ -1,13 +1,10 @@
-from struct import Struct
 from typing import IO
 
-from .types import ImageSize, ImageSizeResult, PreadStream, b2x
+from .types import ImageSize, ImageSizeResult, PreadStream, b2x, le16
 
 GIF87 = b"GIF87a"
 GIF89 = b"GIF89a"
 GIFS = (GIF87, GIF89)
-WH = Struct("<HH")
-
 
 gif_exts = ("gif",)
 
@@ -21,12 +18,12 @@ class GifParser:
         if len(data) < 10:
             return (None, "EOF")
 
-        sig, wh = data[:6], data[6:]
-
+        sig = data[:6]
         if sig not in GIFS:
             return (None, f"Wrong GIF signature {b2x(sig)}")
 
-        w, h = WH.unpack(wh)
+        w = le16(data[6:8])
+        h = le16(data[8:10])
         return (ImageSize(w, h), None)
 
 
