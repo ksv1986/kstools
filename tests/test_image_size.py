@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from kstools.isobmff import ImageParser, iso_exts  # noqa: E402
 from kstools.jpeg import JpegParser, jpeg_exts  # noqa: E402
+from kstools.png import PngParser, png_exts  # noqa: E402
 
 
 def perc(v: int, t: int) -> str:
@@ -31,13 +32,15 @@ def test():
     for root, _, files in os.walk(path):
         for f in files:
             ext = fileextlow(f)
-            if ext not in jpeg_exts + iso_exts:
+            if ext not in jpeg_exts + iso_exts + png_exts:
                 continue
 
             fpath = os.path.join(root, f)
             with open(fpath, "rb") as s:
                 if ext in jpeg_exts:
                     p = JpegParser(s)
+                elif ext in png_exts:
+                    p = PngParser(s)
                 else:
                     p = ImageParser(s)
                 sz, err = p.image_size()
