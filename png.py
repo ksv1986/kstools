@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from struct import Struct
 from typing import IO
 
@@ -12,56 +11,29 @@ PNG = b"\x89PNG\x0D\x0A\x1A\x0A"
 png_exts = ("png",)
 
 
-@dataclass
-class Chunk:
-    offs: int
-    size: int
-    text: bytes
-
-    @property
-    def start(self) -> int:
-        return self.offs + 8
-
-    @property
-    def end(self) -> int:
-        return self.offs + self.size + 12
-
-
 class PngParser:
     def __init__(self, stream: IO[bytes]):
-        stream.seek(0, 2)
-        self.end = stream.tell()
         self.stream = PreadStream(stream)
 
-    def read_chunk(self, offs: int) -> Chunk:
-        data = self.stream.pread(offs, CHUNK.size)
-        if len(data) < CHUNK.size:
-            return None
-        return Chunk(offs, *CHUNK.unpack(data))
-
     def image_size(self) -> ImageSizeResult:
-        sig = self.stream.pread(0, 8)
-        if len(sig) < 8:
-            return (None, "No signature")
+        data_len = len(PNG) + CHUNK.size + IHDR.size
+        data = self.stream.pread(0, data_len)
+        if len(data) < data_len:
+            return (None, "EOF")
+
+        sig, chunk, ihdr = data[:8], data[8:16], data[16:]
 
         if sig != PNG:
-            return (None, f"Wrong PNG signature {b2x(sig)}")
+            return (None, f"Wrong PNG signature: {b2x(sig)}")
 
-        c = self.read_chunk(8)
-        if not c:
-            return (None, "EOF")
+        size, text = CHUNK.unpack(chunk)
+        if text != b"IHDR":
+            return (None, f"Wrong first chunk: {b2x(text)}")
 
-        if c.text != b"IHDR":
-            return (None, "No IHDR chunk")
+        if size != IHDR.size:
+            return (None, f"Invalid IHDR size {size}")
 
-        if c.size != IHDR.size:
-            return (None, f"Invalid IHDR size {c.size}")
-
-        data = self.stream.read(IHDR.size)
-        if len(data) != IHDR.size:
-            return (None, "EOF")
-
-        w, h = IHDR.unpack(data)[:2]
+        w, h = IHDR.unpack(ihdr)[:2]
         return (ImageSize(w, h), None)
 
 
