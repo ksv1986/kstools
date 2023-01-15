@@ -4,6 +4,7 @@ from subprocess import CalledProcessError, check_output
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from kstools.bmp import BmpParser, bmp_exts  # noqa: E402
 from kstools.gif import GifParser, gif_exts  # noqa: E402
 from kstools.isobmff import ImageParser, iso_exts  # noqa: E402
 from kstools.jpeg import JpegParser, jpeg_exts  # noqa: E402
@@ -24,6 +25,7 @@ def fileextlow(name: str) -> str:
 def gen_lookup() -> dict:
     d = {}
     parsers = (
+        (bmp_exts, BmpParser),
         (gif_exts, GifParser),
         (jpeg_exts, JpegParser),
         (iso_exts, ImageParser),
