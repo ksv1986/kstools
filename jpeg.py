@@ -2,6 +2,8 @@ from typing import IO
 
 from .types import ImageSize, ImageSizeResult, PreadStream, b2x
 
+jpeg_exts = ("jpeg", "jpg")
+
 
 def be16(data: bytes):
     return int.from_bytes(data[:2], "big")

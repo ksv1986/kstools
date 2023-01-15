@@ -4,8 +4,8 @@ from subprocess import CalledProcessError, check_output
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from kstools.isobmff import ImageParser  # noqa: E402
-from kstools.jpeg import JpegParser  # noqa: E402
+from kstools.isobmff import ImageParser, iso_exts  # noqa: E402
+from kstools.jpeg import JpegParser, jpeg_exts  # noqa: E402
 
 
 def perc(v: int, t: int) -> str:
@@ -31,12 +31,12 @@ def test():
     for root, _, files in os.walk(path):
         for f in files:
             ext = fileextlow(f)
-            if ext not in ("jpg", "jpeg", "heif", "heic", "avif"):
+            if ext not in jpeg_exts + iso_exts:
                 continue
 
             fpath = os.path.join(root, f)
             with open(fpath, "rb") as s:
-                if ext in ("jpg", "jpeg"):
+                if ext in jpeg_exts:
                     p = JpegParser(s)
                 else:
                     p = ImageParser(s)

@@ -4,6 +4,8 @@ from typing import IO
 
 from .types import ImageSize, ImageSizeResult, PreadStream
 
+iso_exts = ("avif", "heic", "heif")
+
 BOX = Struct(">I4s")
 ISPE = Struct(">IIII")
 
