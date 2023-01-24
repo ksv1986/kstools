@@ -9,6 +9,7 @@ from kstools.gif import GifParser, gif_exts  # noqa: E402
 from kstools.isobmff import ImageParser, iso_exts  # noqa: E402
 from kstools.jpeg import JpegParser, jpeg_exts  # noqa: E402
 from kstools.png import PngParser, png_exts  # noqa: E402
+from kstools.webp import WebpParser, webp_exts  # noqa: E402
 
 
 def perc(v: int, t: int) -> str:
@@ -30,6 +31,7 @@ def gen_lookup() -> dict:
         (jpeg_exts, JpegParser),
         (iso_exts, ImageParser),
         (png_exts, PngParser),
+        (webp_exts, WebpParser),
     )
     for exts, p in parsers:
         for e in exts:
