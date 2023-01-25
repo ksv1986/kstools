@@ -8,6 +8,7 @@ from kstools.bmp import BmpParser, bmp_exts  # noqa: E402
 from kstools.gif import GifParser, gif_exts  # noqa: E402
 from kstools.isobmff import ImageParser, iso_exts  # noqa: E402
 from kstools.jpeg import JpegParser, jpeg_exts  # noqa: E402
+from kstools.jpegxl import JpegxlParser, jpegxl_exts  # noqa: E402
 from kstools.png import PngParser, png_exts  # noqa: E402
 from kstools.webp import WebpParser, webp_exts  # noqa: E402
 
@@ -23,19 +24,35 @@ def fileextlow(name: str) -> str:
     return e[1:] if e else ""
 
 
+def identify(fpath: str) -> str:
+    real = check_output(["identify", fpath]).decode("utf-8")
+    real = real[len(fpath) + 1 :]
+    split = real.split(" ")
+    real = split[3].split("+")[0] if split[1] == "GIF" else split[1]
+    return real
+
+
+def jxlinfo(fpath: str) -> str:
+    real = check_output(["jxlinfo", fpath]).decode("utf-8")
+    split = real.split(",")
+    real = split[1].strip()
+    return real
+
+
 def gen_lookup() -> dict:
     d = {}
     parsers = (
-        (bmp_exts, BmpParser),
-        (gif_exts, GifParser),
-        (jpeg_exts, JpegParser),
-        (iso_exts, ImageParser),
-        (png_exts, PngParser),
-        (webp_exts, WebpParser),
+        (bmp_exts, BmpParser, identify),
+        (gif_exts, GifParser, identify),
+        (jpeg_exts, JpegParser, identify),
+        (jpegxl_exts, JpegxlParser, jxlinfo),
+        (iso_exts, ImageParser, identify),
+        (png_exts, PngParser, identify),
+        (webp_exts, WebpParser, identify),
     )
-    for exts, p in parsers:
+    for exts, p, real in parsers:
         for e in exts:
-            d[e] = p
+            d[e] = (p, real)
     return d
 
 
@@ -59,7 +76,8 @@ def test():
 
             fpath = os.path.join(root, f)
             with open(fpath, "rb") as s:
-                p = lookup[ext](s)
+                parser, real = lookup[ext]
+                p = parser(s)
                 sz, err = p.image_size()
 
                 s.seek(0, 2)
@@ -71,10 +89,7 @@ def test():
             if sz:
                 sz = f"{sz.width}x{sz.height}"
             try:
-                real = check_output(["identify", fpath]).decode("utf-8")
-                real = real[len(fpath) + 1 :]
-                split = real.split(" ")
-                real = split[3].split("+")[0] if split[1] == "GIF" else split[1]
+                real = real(fpath)
             except CalledProcessError:
                 real = "invalid file"
 
