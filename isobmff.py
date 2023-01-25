@@ -24,8 +24,12 @@ class Box:
     def end(self) -> int:
         return self.offs + self.size
 
+    @property
+    def name(self) -> str:
+        return self.text.decode("ascii", errors="replace")
 
-class ImageParser:
+
+class BoxParser:
     def __init__(self, stream: IO[bytes]):
         stream.seek(0, 2)
         self.end = stream.tell()
@@ -36,6 +40,8 @@ class ImageParser:
         if len(data) < BOX.size:
             return None
         b = Box(offs, *BOX.unpack(data))
+        if b.size == 1:
+            b.size = 8
         if not b.size:
             b.size = self.end - b.offs
         return b
@@ -52,6 +58,8 @@ class ImageParser:
             b = self.read_box(b.end)
         return None
 
+
+class ImageParser(BoxParser):
     def image_size(self) -> ImageSizeResult:
         b = self.read_box(0)
         if not b:
