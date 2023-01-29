@@ -1,14 +1,16 @@
 import os
 import sys
 from subprocess import CalledProcessError, check_output
+from typing import ClassVar
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from kstools.bmp import BmpParser, bmp_exts  # noqa: E402
 from kstools.gif import GifParser, gif_exts  # noqa: E402
-from kstools.isobmff import ImageParser, iso_exts  # noqa: E402
+from kstools.isobmff import IFFParser, iso_exts  # noqa: E402
 from kstools.jpeg import JpegParser, jpeg_exts  # noqa: E402
 from kstools.jpegxl import JpegxlParser, jpegxl_exts  # noqa: E402
+from kstools.magic import parse_stream  # noqa: E402
 from kstools.png import PngParser, png_exts  # noqa: E402
 from kstools.webp import WebpParser, webp_exts  # noqa: E402
 
@@ -46,7 +48,7 @@ def gen_lookup() -> dict:
         (gif_exts, GifParser, identify),
         (jpeg_exts, JpegParser, identify),
         (jpegxl_exts, JpegxlParser, jxlinfo),
-        (iso_exts, ImageParser, identify),
+        (iso_exts, IFFParser, identify),
         (png_exts, PngParser, identify),
         (webp_exts, WebpParser, identify),
     )
@@ -56,6 +58,10 @@ def gen_lookup() -> dict:
     return d
 
 
+def clsname(v: ClassVar):
+    return v.__name__ if v else "None"
+
+
 def test():
     path = sys.argv[1] if len(sys.argv) > 1 else "."
     file_count = 0
@@ -63,6 +69,7 @@ def test():
     failures = 0
     seek_count = 0
     bytes_read = 0
+    wrong_guess = 0
     errors = {}
     failed = []
     lookup = gen_lookup()
@@ -80,6 +87,7 @@ def test():
                 p = parser(s)
                 sz, err = p.image_size()
 
+                guess, _ = parse_stream(s)
                 s.seek(0, 2)
                 file_count += 1
                 byte_count += s.tell()
@@ -93,10 +101,16 @@ def test():
             except CalledProcessError:
                 real = "invalid file"
 
-            print(f"{fpath}: {sz} (real {real})")
+            print(
+                f"{fpath}: {sz} (real {real});"
+                f" {clsname(parser)} guess={clsname(guess)}"
+            )
 
-            if not sz or sz != real:
+            if not sz or sz != real or guess != parser:
                 failures += 1
+                if guess != parser:
+                    wrong_guess += 1
+                    err = err or "wrong guess"
                 failed.append(fpath)
                 err = err or "wrong size"
                 count = errors.get(err, 0)
@@ -108,7 +122,10 @@ def test():
         f"bytes_read={bytes_read} ({perc(bytes_read, byte_count)})"
         f" seek_count={seek_count}{avg}"
     )
-    print(f"failures={failures} ({perc(failures, file_count)}) errors={errors}")
+    print(
+        f"failures={failures} ({perc(failures, file_count)})"
+        f" wrong_guess={wrong_guess} errors={errors}"
+    )
 
     MAX = 25
     for i, fpath in enumerate(failed):

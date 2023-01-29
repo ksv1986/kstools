@@ -1,11 +1,11 @@
 from typing import IO
 
-from .types import ImageSize, ImageSizeResult, PreadStream, b2x, be16
+from .types import ImageParser, ImageSize, ImageSizeResult, PreadStream, b2x, be16
 
 jpeg_exts = ("jpeg", "jpg")
 
 
-class JpegParser:
+class JpegParser(ImageParser):
     def __init__(self, stream: IO[bytes]):
         self.stream = PreadStream(stream)
 

@@ -1,7 +1,7 @@
 from struct import Struct
 from typing import IO
 
-from .types import ImageSize, ImageSizeResult, PreadStream, b2x
+from .types import ImageParser, ImageSize, ImageSizeResult, PreadStream, b2x
 
 CHUNK = Struct(">I4s")
 IHDR = Struct(">IIBBBBB")
@@ -11,7 +11,7 @@ PNG = b"\x89PNG\x0D\x0A\x1A\x0A"
 png_exts = ("png",)
 
 
-class PngParser:
+class PngParser(ImageParser):
     def __init__(self, stream: IO[bytes]):
         self.stream = PreadStream(stream)
 

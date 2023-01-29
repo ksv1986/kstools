@@ -1,7 +1,7 @@
 from typing import IO
 
 from .isobmff import BoxParser
-from .types import ImageSize, ImageSizeResult, b2x
+from .types import ImageParser, ImageSize, ImageSizeResult, b2x
 
 jpegxl_exts = ("jxl",)
 
@@ -27,7 +27,7 @@ def get_size(bits: int, div8: int, dist=(9, 13, 18, 30)) -> tuple[int, int]:
         return bits, 1 + v
 
 
-class JpegxlParser(BoxParser):
+class JpegxlParser(ImageParser, BoxParser):
     def parse_codestream(data: bytes) -> ImageSizeResult:
         if len(data) < 11:
             return None, "EOF"

@@ -1,6 +1,6 @@
 from typing import IO
 
-from .types import ImageSize, ImageSizeResult, PreadStream, b2x, le16
+from .types import ImageParser, ImageSize, ImageSizeResult, PreadStream, b2x, le16
 
 GIF87 = b"GIF87a"
 GIF89 = b"GIF89a"
@@ -9,7 +9,7 @@ GIFS = (GIF87, GIF89)
 gif_exts = ("gif",)
 
 
-class GifParser:
+class GifParser(ImageParser):
     def __init__(self, stream: IO[bytes]):
         self.stream = PreadStream(stream)
 

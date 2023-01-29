@@ -1,6 +1,6 @@
 from binascii import hexlify
 from dataclasses import dataclass
-from typing import IO
+from typing import IO, Tuple
 
 
 def b2x(data: bytes):
@@ -21,7 +21,12 @@ class ImageSize:
     height: int
 
 
-ImageSizeResult = tuple[ImageSize, Exception]
+ImageSizeResult = Tuple[ImageSize, str]
+
+
+class ImageParser:
+    def image_size(self) -> ImageSizeResult:
+        pass
 
 
 class PreadStream:

@@ -1,7 +1,7 @@
 from struct import Struct
 from typing import IO
 
-from .types import ImageSize, ImageSizeResult, PreadStream, b2x, le16
+from .types import ImageParser, ImageSize, ImageSizeResult, PreadStream, b2x, le16
 
 webp_exts = ("webp",)
 
@@ -13,7 +13,7 @@ def le24(data: bytes) -> int:
 
 
 # https://datatracker.ietf.org/doc/html/draft-zern-webp
-class WebpParser:
+class WebpParser(ImageParser):
     def __init__(self, stream: IO[bytes]):
         self.stream = PreadStream(stream)
 

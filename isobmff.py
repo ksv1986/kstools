@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from struct import Struct
 from typing import IO
 
-from .types import ImageSize, ImageSizeResult, PreadStream
+from .types import ImageParser, ImageSize, ImageSizeResult, PreadStream
 
 iso_exts = ("avif", "heic", "heif")
 
@@ -59,7 +59,7 @@ class BoxParser:
         return None
 
 
-class ImageParser(BoxParser):
+class IFFParser(ImageParser, BoxParser):
     def image_size(self) -> ImageSizeResult:
         b = self.read_box(0)
         if not b:
@@ -110,4 +110,4 @@ class ImageParser(BoxParser):
 
 
 def isobmff_image_size(stream: IO[bytes]) -> ImageSizeResult:
-    return ImageParser(stream).image_size()
+    return IFFParser(stream).image_size()
