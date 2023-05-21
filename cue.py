@@ -94,8 +94,10 @@ def get_string(line: str) -> Tuple[str, str]:
 
     # CUE has no quote escaping
     # find second quote, return what's inside and line remainder
-    result, tail = line[1:].split('"', 1)
-    return result, tail.lstrip()
+    end = line.find('"', 1)
+    if end > 1:
+        return line[1:end], line[end + 1 :].lstrip()
+    return line[1:], ""
 
 
 def get_token(line: str) -> Tuple[str, str]:
