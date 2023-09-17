@@ -1,7 +1,7 @@
 import os
 import sys
 from subprocess import CalledProcessError, check_output
-from typing import ClassVar
+from typing import Type
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -58,7 +58,7 @@ def gen_lookup() -> dict:
     return d
 
 
-def clsname(v: ClassVar):
+def clsname(v: Type):
     return v.__name__ if v else "None"
 
 
