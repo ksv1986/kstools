@@ -12,6 +12,7 @@ from kstools.jpeg import JpegParser, jpeg_exts  # noqa: E402
 from kstools.jpegxl import JpegxlParser, jpegxl_exts  # noqa: E402
 from kstools.magic import parse_stream  # noqa: E402
 from kstools.png import PngParser, png_exts  # noqa: E402
+from kstools.tiff import TiffParser, tiff_exts  # noqa: E402
 from kstools.webp import WebpParser, webp_exts  # noqa: E402
 
 
@@ -50,6 +51,7 @@ def gen_lookup() -> dict:
         (jpegxl_exts, JpegxlParser, jxlinfo),
         (iso_exts, IFFParser, identify),
         (png_exts, PngParser, identify),
+        (tiff_exts, TiffParser, identify),
         (webp_exts, WebpParser, identify),
     )
     for exts, p, real in parsers:

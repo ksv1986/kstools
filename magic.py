@@ -6,6 +6,7 @@ from .isobmff import IFFParser
 from .jpeg import JpegParser
 from .jpegxl import JXLBOX, JpegxlParser
 from .png import PngParser
+from .tiff import TiffParser
 from .types import ImageParser, ImageSizeResult
 from .webp import WebpParser
 
@@ -28,6 +29,9 @@ def parse_bytes(data: bytes) -> Tuple[ImageParser, str]:
 
     elif data[:4] == b"\x89PNG":
         return PngParser, None
+
+    elif data[:4] == b"II*\x00" or data[:4] == b"MM\x00*":
+        return TiffParser, None
 
     elif data[:4] == b"RIFF" and data[8:12] == b"WEBP":
         return WebpParser, None
