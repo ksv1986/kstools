@@ -480,7 +480,7 @@ class Cue:
                 line = line.strip()
                 self.parse_line(i, line)
         except CueException as e:
-            self.warn(e)
+            self.warn(str(e))
 
         self.trace(f"valid={self.valid} can_fix={self.can_fix} errors={self.errors}")
         self.trace(f"tracks={len(self.tracks)} files={len(self.files())}")
