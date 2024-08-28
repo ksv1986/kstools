@@ -21,6 +21,10 @@ class Box:
         return self.offs + 8
 
     @property
+    def len(self) -> int:
+        return self.size - 8
+
+    @property
     def end(self) -> int:
         return self.offs + self.size
 
