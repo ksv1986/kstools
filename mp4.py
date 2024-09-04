@@ -61,6 +61,11 @@ def get_mp4_codec(stream: IO[bytes]) -> Result:
 if __name__ == "__main__":
     import sys
 
+    if len(sys.argv) < 2:
+        name = __file__.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]
+        print("Usage:", name, "<file.mp4>")
+        sys.exit(1)
+
     with open(sys.argv[1], "rb") as f:
         cc, err = get_mp4_codec(f)
     if err:
