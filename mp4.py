@@ -1,16 +1,15 @@
-from typing import IO, Tuple
+from typing import IO, List, Optional, Tuple
 
 from .isobmff import Box, BoxParser
 
-Result = Tuple[str, str]
+Result = Tuple[Optional[List[str]], Optional[str]]
 
 
 class MP4Parser(BoxParser):
     def __init__(self, stream: IO[bytes]):
         super().__init__(stream)
 
-    def find_recursive(self, offs: int, *args: str) -> Tuple[Box, str]:
-        end = self.end
+    def find_recursive(self, offs: int, end: int, *args: str) -> Tuple[Box, str]:
         b = None
         for text in args:
             b = self.find_box(text.encode("ascii"), offs, end)
@@ -28,16 +27,31 @@ class MP4Parser(BoxParser):
         if b.text != b"ftyp":
             return (None, "No ftyp box")
 
-        chain = ("moov", "trak", "mdia", "minf", "stbl", "stsd")
-        b, err = self.find_recursive(b.end, *chain)
-        if err:
-            return (None, err)
+        moov = self.find_box(b"moov", b.end, self.end)
+        if not moov:
+            return (None, "No moov box")
 
-        if b.size < 8 + 8:
-            return (None, f"stsd atom size={b.size} is too small")
+        tracks = []
+        err = "trak not found"
+        offs = moov.start
+        while trak := self.find_box(b"trak", offs, self.end):
+            offs = trak.end
 
-        cc = self.stream.pread(b.start + 8 + 4, 4)
-        return (cc, None)
+            chain = ("mdia", "minf", "stbl", "stsd")
+            b, err = self.find_recursive(trak.start, trak.end, *chain)
+            if err:
+                continue
+            if b.size < 8 + 8:
+                err = f"stsd atom size={b.size} is too small"
+                continue
+
+            cc = self.stream.pread(b.start + 8 + 4, 4)
+            tracks.append(cc)
+        if tracks:
+            return tracks, None
+        else:
+            return None, err
+        return tracks
 
 
 def get_mp4_codec(stream: IO[bytes]) -> Result:
@@ -52,4 +66,5 @@ if __name__ == "__main__":
     if err:
         print(err, file=sys.stderr)
     else:
-        print(cc.decode("ascii", errors="replace"))
+        for c in cc:
+            print(c.decode("ascii", errors="replace"))
