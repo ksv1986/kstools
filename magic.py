@@ -1,13 +1,13 @@
 from typing import IO, Tuple
 
 from .bmp import OS2IDS, WINIDS, BmpParser
+from .core import ImageParser, ImageSizeResult
 from .gif import GifParser
 from .isobmff import IFFParser
 from .jpeg import JpegParser
 from .jpegxl import JXLBOX, JpegxlParser
 from .png import PngParser
 from .tiff import TiffParser
-from .types import ImageParser, ImageSizeResult
 from .webp import WebpParser
 
 

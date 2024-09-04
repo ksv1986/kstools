@@ -1,6 +1,6 @@
 from typing import IO
 
-from .types import ImageParser, ImageSize, ImageSizeResult, PreadStream, b2x, be16
+from .core import ImageParser, ImageSize, ImageSizeResult, PreadStream, b2x, be16
 
 jpeg_exts = ("jpeg", "jpg")
 

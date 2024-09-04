@@ -1,7 +1,7 @@
 from typing import IO
 
+from .core import ImageParser, ImageSize, ImageSizeResult, b2x
 from .isobmff import BoxParser
-from .types import ImageParser, ImageSize, ImageSizeResult, b2x
 
 jpegxl_exts = ("jxl",)
 

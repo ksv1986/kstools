@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from struct import Struct
 from typing import IO
 
-from .types import ImageParser, ImageSize, ImageSizeResult, PreadStream
+from .core import ImageParser, ImageSize, ImageSizeResult, PreadStream
 
 iso_exts = ("avif", "heic", "heif")
 

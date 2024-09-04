@@ -1,6 +1,6 @@
 from typing import IO, Tuple
 
-from .types import ImageParser, ImageSize, ImageSizeResult, PreadStream, b2x
+from .core import ImageParser, ImageSize, ImageSizeResult, PreadStream, b2x
 
 tiff_exts = ("tiff",)
 

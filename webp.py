@@ -1,7 +1,7 @@
 from struct import Struct
 from typing import IO
 
-from .types import ImageParser, ImageSize, ImageSizeResult, PreadStream, b2x, le16
+from .core import ImageParser, ImageSize, ImageSizeResult, PreadStream, b2x, le16
 
 webp_exts = ("webp",)
 
