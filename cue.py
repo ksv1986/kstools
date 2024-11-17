@@ -216,10 +216,10 @@ class Cue:
     nr_files = 0
     performer = None
     composer = None
-    genre = None
+    genre = ""
     title = None
-    date = None
-    comment = None
+    date = ""
+    comment = ""
     i = 0
     errors = 0
 
