@@ -42,14 +42,14 @@ class WebpParser(ImageParser):
             # https://www.rfc-editor.org/rfc/rfc6386.txt
             data = self.stream.pread(12 + 8 + 3, 3 + 4)
             code, data = data[:3], data[3:]
-            if code != b"\x9D\x01\x2A":
+            if code != b"\x9d\x01\x2a":
                 return (None, f"Invalid VP8 start code {b2x(code)}")
             w, h = le16(data) & 0x3FFF, le16(data[2:]) & 0x3FFF
         elif cc == b"VP8L":
             data = self.stream.pread(12 + 8 + 4, 5)
             if len(data) < 6:
                 return (None, f"Unexpected EOF at {self.stream.offs}")
-            if data[0] != b"\x2F":
+            if data[0] != b"\x2f":
                 return (None, f"Invalid VP8L signature byte {b2x(data[0])}")
             # w and h are 14 bits little endian
             i = int.from_bytes(data[1:5], "little") >> 4

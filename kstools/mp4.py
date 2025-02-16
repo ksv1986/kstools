@@ -1,15 +1,15 @@
-from typing import IO, List, Optional, Tuple
+from typing import IO
 
 from .isobmff import Box, BoxParser
 
-Result = Tuple[Optional[List[str]], Optional[str]]
+Result = tuple[list[str] | None, str | None]
 
 
 class MP4Parser(BoxParser):
     def __init__(self, stream: IO[bytes]):
         super().__init__(stream)
 
-    def find_recursive(self, offs: int, end: int, *args: str) -> Tuple[Box, str]:
+    def find_recursive(self, offs: int, end: int, *args: str) -> tuple[Box, str]:
         b = None
         for text in args:
             b = self.find_box(text.encode("ascii"), offs, end)

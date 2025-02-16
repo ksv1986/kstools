@@ -6,10 +6,8 @@ from .isobmff import BoxParser
 jpegxl_exts = ("jxl",)
 
 RATIO = (None, (1, 1), (12, 10), (4, 3), (3, 2), (16, 9), (5, 4), (2, 1))
-SOI = b"\xFF\x0A"
-JXLBOX = (
-    b"\x00\x00\x00\x0cJXL \r\n\x87\n" b"\x00\x00\x00\x14ftypjxl \x00\x00\x00\x00jxl "
-)
+SOI = b"\xff\x0a"
+JXLBOX = b"\x00\x00\x00\x0cJXL \r\n\x87\n\x00\x00\x00\x14ftypjxl \x00\x00\x00\x00jxl "
 
 
 def get_bits(bits: int, n: int) -> tuple[int, int]:

@@ -1,25 +1,24 @@
 import os
 import sys
 from subprocess import CalledProcessError, check_output
-from typing import Type
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from kstools.bmp import BmpParser, bmp_exts  # noqa: E402
-from kstools.gif import GifParser, gif_exts  # noqa: E402
-from kstools.isobmff import IFFParser, iso_exts  # noqa: E402
-from kstools.jpeg import JpegParser, jpeg_exts  # noqa: E402
-from kstools.jpegxl import JpegxlParser, jpegxl_exts  # noqa: E402
-from kstools.magic import parse_stream  # noqa: E402
-from kstools.png import PngParser, png_exts  # noqa: E402
-from kstools.tiff import TiffParser, tiff_exts  # noqa: E402
-from kstools.webp import WebpParser, webp_exts  # noqa: E402
+from kstools.bmp import BmpParser, bmp_exts
+from kstools.gif import GifParser, gif_exts
+from kstools.isobmff import IFFParser, iso_exts
+from kstools.jpeg import JpegParser, jpeg_exts
+from kstools.jpegxl import JpegxlParser, jpegxl_exts
+from kstools.magic import parse_stream
+from kstools.png import PngParser, png_exts
+from kstools.tiff import TiffParser, tiff_exts
+from kstools.webp import WebpParser, webp_exts
 
 
 def perc(v: int, t: int) -> str:
     if not t or not v:
         return "0%"
-    return f"{100. * v / t:.02f}%"
+    return f"{100.0 * v / t:.02f}%"
 
 
 def fileextlow(name: str) -> str:
@@ -60,7 +59,7 @@ def gen_lookup() -> dict:
     return d
 
 
-def clsname(v: Type):
+def clsname(v: type):
     return v.__name__ if v else "None"
 
 
@@ -104,8 +103,7 @@ def test():
                 real = "invalid file"
 
             print(
-                f"{fpath}: {sz} (real {real});"
-                f" {clsname(parser)} guess={clsname(guess)}"
+                f"{fpath}: {sz} (real {real}); {clsname(parser)} guess={clsname(guess)}"
             )
 
             if not sz or sz != real or guess != parser:
@@ -119,7 +117,7 @@ def test():
                 errors[err] = count + 1
 
     print(f"file_count={file_count} byte_count={byte_count}")
-    avg = f" (avg={seek_count/file_count:.02f}/file)" if file_count else ""
+    avg = f" (avg={seek_count / file_count:.02f}/file)" if file_count else ""
     print(
         f"bytes_read={bytes_read} ({perc(bytes_read, byte_count)})"
         f" seek_count={seek_count}{avg}"

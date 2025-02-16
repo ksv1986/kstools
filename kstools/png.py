@@ -5,7 +5,7 @@ from .core import ImageParser, ImageSize, ImageSizeResult, PreadStream, b2x
 
 CHUNK = Struct(">I4s")
 IHDR = Struct(">IIBBBBB")
-PNG = b"\x89PNG\x0D\x0A\x1A\x0A"
+PNG = b"\x89PNG\x0d\x0a\x1a\x0a"
 
 
 png_exts = ("png",)

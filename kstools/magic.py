@@ -1,4 +1,4 @@
-from typing import IO, Tuple
+from typing import IO
 
 from .bmp import OS2IDS, WINIDS, BmpParser
 from .core import ImageParser, ImageSizeResult
@@ -11,7 +11,7 @@ from .tiff import TiffParser
 from .webp import WebpParser
 
 
-def parse_bytes(data: bytes) -> Tuple[ImageParser, str]:
+def parse_bytes(data: bytes) -> tuple[ImageParser, str]:
     if len(data) < 12:
         return None, f"Data length {len(data)} is too short"
 
@@ -45,7 +45,7 @@ def parse_bytes(data: bytes) -> Tuple[ImageParser, str]:
     return None, "Unknown file"
 
 
-def parse_stream(stream: IO[bytes]) -> Tuple[ImageParser, str]:
+def parse_stream(stream: IO[bytes]) -> tuple[ImageParser, str]:
     stream.seek(0)
     data = stream.read(12)
     return parse_bytes(data)

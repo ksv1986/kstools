@@ -1,4 +1,4 @@
-from typing import IO, Tuple
+from typing import IO
 
 from .core import ImageParser, ImageSize, ImageSizeResult, PreadStream, b2x
 
@@ -13,7 +13,7 @@ ImageLength: int = 257
 """The number of rows of pixels in the image."""
 
 
-def getint(data: bytes, order: str) -> Tuple[int, str]:
+def getint(data: bytes, order: str) -> tuple[int, str]:
     t = int.from_bytes(data[2:4], order)
     if t == 3:
         return (int.from_bytes(data[8:10], order), None)

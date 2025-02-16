@@ -1,7 +1,8 @@
 import logging
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, NoReturn, Optional, Tuple
+from typing import NoReturn
 
 # Valid CUE file encodings
 VALID_ENCODINGS = {
@@ -85,7 +86,7 @@ def nop(s: str) -> str:
     return s
 
 
-def get_string(line: str) -> Tuple[str, str]:
+def get_string(line: str) -> tuple[str, str]:
     """Returns string value and line remainder"""
     line = line.lstrip()
     if line[0] != '"':
@@ -100,7 +101,7 @@ def get_string(line: str) -> Tuple[str, str]:
     return line[1:], ""
 
 
-def get_token(line: str) -> Tuple[str, str]:
+def get_token(line: str) -> tuple[str, str]:
     """Returns next token and line remainder"""
     s = line.find(" ")
     if s < 0:
@@ -109,18 +110,18 @@ def get_token(line: str) -> Tuple[str, str]:
         return line[:s], line[s + 1 :].lstrip()
 
 
-def get_ts(line: str) -> Tuple[str, str]:
+def get_ts(line: str) -> tuple[str, str]:
     return get_token(line)
 
 
-def get_index(line: str) -> Tuple[int, str]:
+def get_index(line: str) -> tuple[int, str]:
     idx, line = get_token(line)
     return int(idx, 10), line
 
 
 def njoin(line: str, next: str) -> str:
     """Join two strings with new line"""
-    return "\n".join((line, next)) if line else next
+    return f"{line}\n{next}" if line else next
 
 
 class CueException(Exception):
@@ -240,7 +241,7 @@ class Cue:
     def throw(self, message) -> NoReturn:
         raise CueException(self.pre() + message)
 
-    def current(self) -> Optional[Track]:
+    def current(self) -> Track | None:
         return self.tracks[-1] if self.tracks else None
 
     def set_end(self, ts) -> None:
@@ -345,7 +346,7 @@ class Cue:
         if self.current():
             self.err(f"REM {rem} must be global")
 
-    def rem_get_string(self, line: str, rem: str) -> Tuple[bool, str]:
+    def rem_get_string(self, line: str, rem: str) -> tuple[bool, str]:
         is_quoted = line[0] == '"'
         value, line = get_string(line)
         self.rem_check_empty(line, rem)
@@ -414,7 +415,7 @@ class Cue:
     def rem_update(self, attr: str, value: str, do_quote=False) -> None:
         self.update(attr, value, rem=True, do_quote=do_quote)
 
-    def compare(self, content: str) -> Tuple[int, str]:
+    def compare(self, content: str) -> tuple[int, str]:
         self.warn(f" errors: {self.errors}")
         content = content.splitlines()
         build = self.build().splitlines()
@@ -427,7 +428,7 @@ class Cue:
 
         out = ""
         any = 0
-        for i in range(0, n):
+        for i in range(n):
             left = content[i]
             right = build[i]
             line = f"{content[i]:100s} | {build[i]}"
@@ -443,7 +444,7 @@ class Cue:
         """Construct CUE file contents from parsed parts"""
         content = "\n".join(self.header)
         for track in self.tracks:
-            content = "\n".join((content, track.build()))
+            content = f"{content}\n{track.build()}"
         return content
 
     def utf8(self) -> bytes:
@@ -454,7 +455,7 @@ class Cue:
         """List of files referenced by CUE"""
         return [x.file for x in self.tracks if x.file]
 
-    def __init__(self, path: str, data: bytes = None):
+    def __init__(self, path: str, data: bytes | None = None):
         """Parse CUE file data and return True if no problems found"""
         self.path = path
         self.header = []
