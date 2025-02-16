@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kstools"
+version = "0.0.1"
+description = "set of minimalistic Python packages"
+
+[project.urls]
+Source = "https://github.com/ksv1986/kstools"
+
+[tool.setuptools.packages.find]
+include = ["kstools"]
+exclude = ["bin", "tests"]
