@@ -1,7 +1,7 @@
 from typing import IO
 
 from .bmp import OS2IDS, WINIDS, BmpParser
-from .core import ImageParser, ImageSizeResult
+from .core import FormatError, ImageParser, ImageSize, b2x
 from .gif import GifParser
 from .isobmff import IFFParser
 from .jpeg import JpegParser
@@ -11,49 +11,46 @@ from .tiff import TiffParser
 from .webp import WebpParser
 
 
-def parse_bytes(data: bytes) -> tuple[ImageParser, str]:
+def parse_bytes(data: bytes) -> type[ImageParser]:
     if len(data) < 12:
-        return None, f"Data length {len(data)} is too short"
+        raise FormatError(f"Data length {len(data)} is too short")
 
     if data[0] == 0:
         if data[:12] == JXLBOX[:12]:
-            return JpegxlParser, None
+            return JpegxlParser
         if data[4:8] == b"ftyp":
-            return IFFParser, None
+            return IFFParser
 
     elif data[0] == 0xFF:
         if data[1] == 0xD8:
-            return JpegParser, None
+            return JpegParser
         if data[1] == 0x0A:
-            return JpegxlParser, None
+            return JpegxlParser
 
     elif data[:4] == b"\x89PNG":
-        return PngParser, None
+        return PngParser
 
     elif data[:4] == b"II*\x00" or data[:4] == b"MM\x00*":
-        return TiffParser, None
+        return TiffParser
 
     elif data[:4] == b"RIFF" and data[8:12] == b"WEBP":
-        return WebpParser, None
+        return WebpParser
 
     elif data[:3] == b"GIF":
-        return GifParser, None
+        return GifParser
 
     elif data[:2] in WINIDS + OS2IDS:
-        return BmpParser, None
+        return BmpParser
 
-    return None, "Unknown file"
+    raise FormatError(f"Unknown file signarure {b2x(data)}")
 
 
-def parse_stream(stream: IO[bytes]) -> tuple[ImageParser, str]:
+def parse_stream(stream: IO[bytes]) -> type[ImageParser]:
     stream.seek(0)
     data = stream.read(12)
     return parse_bytes(data)
 
 
-def image_stream_size(stream: IO[bytes]) -> ImageSizeResult:
-    cls, err = parse_stream(stream)
-    if err:
-        return None, err
-
+def image_stream_size(stream: IO[bytes]) -> ImageSize:
+    cls = parse_stream(stream)
     return cls(stream).image_size()

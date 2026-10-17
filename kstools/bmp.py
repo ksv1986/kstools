@@ -1,7 +1,7 @@
 from struct import Struct
 from typing import IO
 
-from .core import ImageParser, ImageSize, ImageSizeResult, PreadStream, b2x
+from .core import FormatError, ImageParser, ImageSize, PreadStream, b2x
 
 bmp_exts = ("bmp", "dib")
 
@@ -17,10 +17,10 @@ class BmpParser(ImageParser):
     def __init__(self, stream: IO[bytes]):
         self.stream = PreadStream(stream)
 
-    def image_size(self) -> ImageSizeResult:
+    def image_size(self) -> ImageSize:
         data = self.stream.pread(0, 26)
         if len(data) < 26:
-            return (None, "EOF")
+            raise FormatError("EOF")
 
         sig = HEADER.unpack(data[:14])[0]
         if sig in WINIDS:
@@ -28,10 +28,10 @@ class BmpParser(ImageParser):
         elif sig in OS2IDS:
             w, h = OS2HDR.unpack(data[14:])[1:3]
         else:
-            return (None, f"Unknown BMP type: {b2x(sig)}")
+            raise FormatError(f"Unknown BMP type: {b2x(sig)}")
 
-        return (ImageSize(w, h), None)
+        return ImageSize(w, h)
 
 
-def bmp_image_size(stream: IO[bytes]) -> ImageSizeResult:
+def bmp_image_size(stream: IO[bytes]) -> ImageSize:
     return BmpParser(stream).image_size()

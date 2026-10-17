@@ -1,10 +1,12 @@
 import os
 import sys
+from collections import Counter
 from subprocess import CalledProcessError, check_output
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from kstools.bmp import BmpParser, bmp_exts
+from kstools.core import FormatError
 from kstools.gif import GifParser, gif_exts
 from kstools.isobmff import IFFParser, iso_exts
 from kstools.jpeg import JpegParser, jpeg_exts
@@ -41,6 +43,10 @@ def jxlinfo(fpath: str) -> str:
     return real
 
 
+class Unknown:
+    pass
+
+
 def gen_lookup() -> dict:
     d = {}
     parsers = (
@@ -71,7 +77,7 @@ def test():
     seek_count = 0
     bytes_read = 0
     wrong_guess = 0
-    errors = {}
+    errors = Counter()
     failed = []
     lookup = gen_lookup()
     exts = lookup.keys()
@@ -82,18 +88,25 @@ def test():
             if ext not in exts:
                 continue
 
+            sz = None
+            err = ""
+            guess = Unknown
+
             fpath = os.path.join(root, f)
             with open(fpath, "rb") as s:
                 parser, real = lookup[ext]
                 p = parser(s)
-                sz, err = p.image_size()
+                try:
+                    sz = p.image_size()
+                    guess = parse_stream(s)
+                    s.seek(0, 2)
 
-                guess, _ = parse_stream(s)
-                s.seek(0, 2)
-                file_count += 1
-                byte_count += s.tell()
-                bytes_read += p.stream.bytes_read
-                seek_count += p.stream.seek_count
+                    file_count += 1
+                    byte_count += s.tell()
+                    bytes_read += p.stream.bytes_read
+                    seek_count += p.stream.seek_count
+                except FormatError as ex:
+                    err = str(ex)
 
             if sz:
                 sz = f"{sz.width}x{sz.height}"
@@ -113,8 +126,7 @@ def test():
                     err = err or "wrong guess"
                 failed.append(fpath)
                 err = err or "wrong size"
-                count = errors.get(err, 0)
-                errors[err] = count + 1
+                errors[err] += 1
 
     print(f"file_count={file_count} byte_count={byte_count}")
     avg = f" (avg={seek_count / file_count:.02f}/file)" if file_count else ""
@@ -122,10 +134,9 @@ def test():
         f"bytes_read={bytes_read} ({perc(bytes_read, byte_count)})"
         f" seek_count={seek_count}{avg}"
     )
-    print(
-        f"failures={failures} ({perc(failures, file_count)})"
-        f" wrong_guess={wrong_guess} errors={errors}"
-    )
+    print(f"{failures=} ({perc(failures, file_count)}) {wrong_guess=}")
+    for err, nr in errors:
+        print(f"\t{nr:4}: {err}")
 
     MAX = 25
     for i, fpath in enumerate(failed):

@@ -1,10 +1,10 @@
+from abc import ABC, abstractmethod
 from binascii import hexlify
-from dataclasses import dataclass
-from typing import IO
+from typing import IO, NamedTuple
 
 
 def b2x(data: bytes):
-    return hexlify(data[0:11]).decode("ascii")
+    return hexlify(data[0:12]).decode("ascii")
 
 
 def be16(data: bytes):
@@ -15,18 +15,23 @@ def le16(data: bytes):
     return int.from_bytes(data[:2], "little")
 
 
-@dataclass
-class ImageSize:
+class FormatError(ValueError):
+    pass
+
+
+class ImageSize(NamedTuple):
     width: int
     height: int
 
 
-ImageSizeResult = tuple[ImageSize, str]
+class StreamParser(ABC):
+    @abstractmethod
+    def __init__(self, stream: IO[bytes]): ...
 
 
-class ImageParser:
-    def image_size(self) -> ImageSizeResult:
-        pass
+class ImageParser(StreamParser):
+    @abstractmethod
+    def image_size(self) -> ImageSize: ...
 
 
 class PreadStream:
@@ -37,14 +42,15 @@ class PreadStream:
         self.bytes_read = 0
         self.seek_count = 0
 
-    def seek(self, offs: int):
+    def seek(self, offs: int) -> int:
         if self.offs != offs:
             self.offs = offs
-            self.stream.seek(offs)
             self.seek_count += 1
+            self.stream.seek(offs)
+        return self.offs
 
-    def skip(self, length: int):
-        self.seek(self.offs + length)
+    def skip(self, length: int) -> int:
+        return self.seek(self.offs + length)
 
     def read(self, size: int = -1) -> bytes:
         data = self.stream.read(size)
