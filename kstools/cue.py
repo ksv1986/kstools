@@ -1,6 +1,7 @@
 import logging
 import sys
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import NoReturn
 
@@ -28,7 +29,7 @@ def info(msg: str, **kwargs) -> None:
 
 
 def warn(msg: str, **kwargs) -> None:
-    L.warn(msg, **kwargs)
+    L.warning(msg, **kwargs)
 
 
 def error(msg: str, **kwargs) -> None:
@@ -52,21 +53,21 @@ Y = yellow
 G = green
 
 
-def detect_encoding(data) -> str:
+def detect_encoding(data: bytes | bytearray) -> str:
     try:
         from chardet import detect
 
         trace("using chardet")
 
-        def _detect_encoding(data: bytes) -> str:
-            e = detect(data)["encoding"]
+        def _detect_encoding(data: bytes | bytearray) -> str:
+            e = detect(data)["encoding"] or ""
             return ENCODING_MAP.get(e, e)
 
     except ModuleNotFoundError:
         warn("chardet module not found, cue file encoding could not be detected.")
         warn('Use "pip install chardet" to enable the feature.')
 
-        def _detect_encoding(data: bytes) -> str:
+        def _detect_encoding(data: bytes | bytearray) -> str:
             if data.startswith(b"\xef\xbb\xbf"):
                 return "UTF-8-SIG"
             for i in data:
@@ -124,30 +125,30 @@ def njoin(line: str, next: str) -> str:
     return f"{line}\n{next}" if line else next
 
 
-class CueException(Exception):
+class CueError(ValueError):
     pass
 
 
 Fn = Callable[[str], str]
+Rem = tuple[str, str, Fn]
 
 
+@dataclass
 class Track:
-    performer = None
-    songwriter = None
-    title = None
-    pregap = None
-    postgap = None
-    end = None
-    flags = None
-    isrc = None
-
-    def __init__(self, index: int, ttype: str, file: str, ftype: str):
-        self.index = index
-        self.file = file
-        self.ftype = ftype
-        self.ttype = ttype
-        self.rem = []
-        self.indices = []
+    index: int
+    ttype: str
+    file: str
+    ftype: str
+    performer: str = ""
+    songwriter: str = ""
+    title: str = ""
+    pregap: str = ""
+    postgap: str = ""
+    end: str = ""
+    flags: str = ""
+    isrc: str = ""
+    rem: list[Rem] = field(default_factory=list)
+    indices: list[tuple[int, str]] = field(default_factory=list)
 
     def add_rem(self, rem: str, value: str, do_quote: bool = False) -> None:
         self.rem.append((rem, value, quote if do_quote else nop))
@@ -170,14 +171,11 @@ class Track:
         content = ""
         if self.file:
             content = njoin(content, f"FILE {quote(self.file)} {self.ftype}")
-        ind = "  "
-        content = njoin(content, f"{ind}TRACK {self.index:02d} {self.ttype}")
+        content = njoin(content, f"  TRACK {self.index:02d} {self.ttype}")
         ind = "    "
         content = self.njoin_quote(content, ind, "TITLE", "PERFORMER", "SONGWRITER")
         for rem, value, do_quote in self.rem:
-            if do_quote:
-                value = quote(value)
-            content = njoin(content, f"{ind}REM {rem} {value}")
+            content = njoin(content, f"{ind}REM {rem} {do_quote(value)}")
         content = self.njoin(content, ind, "FLAGS", "ISRC", "PREGAP")
         for i in self.indices:
             content = njoin(content, f"{ind}INDEX {i[0]:02d} {i[1]}")
@@ -209,20 +207,26 @@ TRACK_TYPES = {
 
 
 class Cue:
-    valid = True
-    can_fix = False
-    path = None
-    file = None
-    ftype = None
-    nr_files = 0
-    performer = None
-    composer = None
-    genre = ""
-    title = None
-    date = ""
-    comment = ""
-    i = 0
-    errors = 0
+    def __init__(self, path: str, data: bytes | bytearray | None = None):
+        """Parse CUE file data and return True if no problems found"""
+        self.path = path
+        self.valid = True
+        self.can_fix = False
+        self.file = ""
+        self.ftype = ""
+        self.nr_files = 0
+        self.performer = ""
+        self.composer = ""
+        self.genre = ""
+        self.title = ""
+        self.date = ""
+        self.comment = ""
+        self.header = []
+        self.tracks = []
+        self.i = 0
+        self.errors = 0
+
+        self._parse(data)
 
     def pre(self) -> str:
         return f"{Y(self.path)}:{self.i}: "
@@ -238,11 +242,19 @@ class Cue:
         self.errors += 1
         self.valid = False
 
-    def throw(self, message) -> NoReturn:
-        raise CueException(self.pre() + message)
+    def throw(self, message: str) -> NoReturn:
+        raise CueError(self.pre() + message)
 
-    def current(self) -> Track | None:
-        return self.tracks[-1] if self.tracks else None
+    def is_track(self) -> bool:
+        return bool(self.tracks)
+
+    def track(self) -> Track:
+        return self.tracks[-1]
+
+    def require_track(self, tag: str) -> Track:
+        if not self.is_track():
+            self.throw(f"{tag} outside TRACK definition")
+        return self.track()
 
     def set_end(self, ts) -> None:
         prev = self.tracks[-2] if len(self.tracks) > 1 else None
@@ -253,15 +265,11 @@ class Cue:
         if line:
             self.err(f"unused content after {tag} statement")
 
-    def check_track(self, tag: str) -> None:
-        if not self.current():
-            self.throw(f"{tag} outside TRACK definition")
-
     def parse_tag(self, line: str, tag: str) -> None:
         attr = tag.lower()
         value, line = get_string(line)
-        if self.current():
-            setattr(self.current(), attr, value)
+        if self.is_track():
+            setattr(self.track(), attr, value)
         else:
             setattr(self, attr, value)
             self.header.append(f"{tag} {quote(value)}")
@@ -278,9 +286,11 @@ class Cue:
         ftype, line = get_token(line)
         if ftype not in FILE_TYPES:
             return self.err(f"unknown FILE type '{ftype}'")
-        if self.current() and not self.current().file:
-            self.current().file = file
-            self.current().ftype = ftype
+
+        track = self.track() if self.tracks else None
+        if track and not track.file:
+            track.file = file
+            track.ftype = ftype
         else:
             self.file = file
             self.ftype = ftype
@@ -306,57 +316,46 @@ class Cue:
             msg = f"unexpected TRACK index {index:02d}, expected {len(self.tracks):02d}"
             self.err(msg)
 
-        self.file = None
-        self.ftype = None
+        self.file = ""
+        self.ftype = ""
 
     def parse_INDEX(self, line: str, tag: str) -> None:
         index, line = get_index(line)
         ts, line = get_ts(line)
         self.check_empty(line, tag)
-        self.check_track(tag)
-        self.current().indices.append((index, ts))
+        self.require_track(tag).indices.append((index, ts))
         self.set_end(ts)
 
     def parse_PREGAP(self, line: str, tag: str) -> None:
         ts, line = get_ts(line)
         self.check_empty(line, tag)
-        self.check_track(tag)
-        self.current().pregap = ts
+        self.require_track(tag).pregap = ts
 
     def parse_SONGWRITER(self, line: str, tag: str) -> None:
-        self.check_track(tag)
+        self.require_track(tag)
         self.parse_tag(line, tag)
 
     def parse_FLAGS(self, line: str, tag: str) -> None:
-        self.check_track(tag)
-        self.current().flags = line
+        self.require_track(tag).flags = line
 
     def parse_ISRC(self, line: str, tag: str) -> None:
-        self.check_track(tag)
-        self.current().isrc = line
+        self.require_track(tag).isrc = line
 
     def parse_CATALOG(self, line: str, tag: str) -> None:
         self.header.append(f"CATALOG {line}")
 
     # REM
-    def rem_check_empty(self, line: str, rem: str) -> None:
-        return self.check_empty(line, f"REM {rem}")
-
-    def rem_check_is_global(self, rem: str) -> None:
-        if self.current():
-            self.err(f"REM {rem} must be global")
-
     def rem_get_string(self, line: str, rem: str) -> tuple[bool, str]:
         is_quoted = line[0] == '"'
         value, line = get_string(line)
-        self.rem_check_empty(line, rem)
+        self.check_empty(line, f"REM {rem}")
         return is_quoted, value
 
     def rem_string(self, line: str, rem: str) -> None:
         attr = rem.lower()
         is_quoted, value = self.rem_get_string(line, rem)
-        if self.current():
-            return self.current().add_rem(rem, value, is_quoted)
+        if self.is_track():
+            return self.track().add_rem(rem, value, is_quoted)
 
         if hasattr(self, attr):
             setattr(self, attr, value)
@@ -365,7 +364,8 @@ class Cue:
         self.header.append(f"REM {rem} {value}")
 
     def rem_DISCID(self, line: str, rem: str) -> None:
-        self.rem_check_is_global(rem)
+        if self.is_track():
+            self.err(f"REM {rem} must be global")
         is_quoted, value = self.rem_get_string(line, rem)
         if is_quoted:
             value = quote(value)
@@ -405,19 +405,19 @@ class Cue:
             attr = "REM " + attr
         if do_quote:
             value = quote(value)
-        for i, h in enumerate(self.headers):
+        for i, h in enumerate(self.header):
             if h.startswith(attr):
-                self.headers[i] = f"{attr} {value}"
+                self.header[i] = f"{attr} {value}"
                 break
         else:
-            self.headers.append(f"{attr} {value}")
+            self.header.append(f"{attr} {value}")
 
     def rem_update(self, attr: str, value: str, do_quote=False) -> None:
         self.update(attr, value, rem=True, do_quote=do_quote)
 
-    def compare(self, content: str) -> tuple[int, str]:
+    def compare(self, other: str) -> tuple[int, str]:
         self.warn(f" errors: {self.errors}")
-        content = content.splitlines()
+        content = other.splitlines()
         build = self.build().splitlines()
 
         n = max(len(content), len(build))
@@ -455,14 +455,9 @@ class Cue:
         """List of files referenced by CUE"""
         return [x.file for x in self.tracks if x.file]
 
-    def __init__(self, path: str, data: bytes | None = None):
-        """Parse CUE file data and return True if no problems found"""
-        self.path = path
-        self.header = []
-        self.tracks = []
-
+    def _parse(self, data: bytes | bytearray | None = None) -> None:
         if data is None:
-            data = Path(path).read_bytes()
+            data = Path(self.path).read_bytes()
 
         if not data:
             self.warn("empty file")
@@ -480,7 +475,7 @@ class Cue:
             for i, line in enumerate(content.splitlines()):
                 line = line.strip()
                 self.parse_line(i, line)
-        except CueException as e:
+        except CueError as e:
             self.warn(str(e))
 
         self.trace(f"valid={self.valid} can_fix={self.can_fix} errors={self.errors}")
